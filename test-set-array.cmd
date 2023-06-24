@@ -4,14 +4,14 @@
 :: add /out%log% to 1c commands
 set step=0
 set numberOfBases=0
-set bases=ProfiSN ProfiSN_HRM
-set updates_dir=%APPDATA%\1C\1cv8\tmplts\1c
+set bases=TimberDis ProfiSN
+set updates_dir=D:\Ivan\1C\tmplts\1c
 SET processName=1cv8
 SET UNLOCK_CODE=КодРазрешения
-SET START_FILE="C:\Program Files\1cv8\8.3.22.1750\bin\1cv8.exe"
-SET BASES_DIR=Y:\1С\Bases
-SET BACKUP_DIR=Y:\1С\Bases\Backups
-SET LOGS_DIR=Y:\1С\Bases\Logs
+SET START_FILE="C:\Program Files\1cv8\8.3.23.1739\bin\1cv8.exe"
+SET BASES_DIR=D:\Ivan\1C\Bases
+SET BACKUP_DIR=D:\Ivan\1C\Backup
+SET LOGS_DIR=D:\Ivan\1C\Log
 
 :selOperation
 echo.
@@ -46,8 +46,11 @@ for %%i in (%bases%) do (
 set /p select="Выберете базу: "
 :: support set of options, i.e.  input: 1 3
 if %select% EQU 0 goto all
-if %select% EQU 1 goto ProfiSN
-if %select% EQU 2 goto ProfiSN_HRM
+if %select% EQU 1 goto TimberDis
+if %select% EQU 2 goto ProfiSN
+:: if %select% EQU 3 goto ProfiSN_HRM
+:: if %select% EQU 1 goto ProfiSN
+:: if %select% EQU 2 goto ProfiSN_HRM
 :: if %select% EQU 1 goto legion_hrm
 :: if %select% EQU 2 goto legion_corp
 :: if %select% EQU 3 goto profi_sn
@@ -61,7 +64,50 @@ echo.
 echo %select%: Все
 
 :step0
+:TimberDis
+echo.
+SET BASE_NAME=TimberDis
+SET BASE_TYPE=AccountingBase
+SET CURRENT_VERSION=3_0_138_25
+echo %select%: TimberDis
+echo.
+goto copy
+
+:step1
 :ProfiSN
+echo.
+SET BASE_NAME=ProfiSN
+SET BASE_TYPE=AccountingBase
+SET CURRENT_VERSION=3_0_138_24
+echo %select%: ProfiSN
+echo.
+goto copy
+
+:step31
+:Legion_HRM
+goto next
+echo.
+SET BASE_NAME=Legion_HRM
+SET BASE_TYPE=HRM
+SET CURRENT_VERSION=0
+echo %select%: Legion_HRM
+echo.
+goto copy
+
+:step32
+:ProfiSN_HRM
+goto next
+echo.
+SET BASE_NAME=ProfiSN_HRM
+SET BASE_TYPE=HRM
+SET CURRENT_VERSION=0
+echo %select%: ProfiSN_HRM
+echo.
+goto copy
+
+:step20
+:ProfiSN
+goto next
 echo.
 SET BASE_NAME=ProfiSN
 SET BASE_TYPE=AccountingBase
@@ -70,8 +116,9 @@ echo %select%: ProfiSN
 echo.
 goto copy
 
-:step1
+:step21
 :ProfiSN_HRM
+goto next
 echo.
 SET BASE_NAME=ProfiSN_HRM
 SET BASE_TYPE=HRM
@@ -114,14 +161,14 @@ echo.
 goto copy
 
 :copy
-echo Backup %BASE_NAME%
+echo Резервное копирование %BASE_NAME%..
 :: lock users
-echo Locking users..
+echo Блокировка пользователей..
 start "Блокировка работы пользователей" /b /wait %START_FILE% ENTERPRISE /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /CЗавершитьРаботуПользователей /UC%UNLOCK_CODE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate 2>&1 >NUL
 if errorlevel 0 (
-  echo Работа пользователей завершена
+  echo Работа пользователей завершена..
 ) else (
-  echo Не удалось завершить работу пользователей. Продолжить?
+  echo Не удалось завершить работу пользователей. Продолжить?.
 )
 :: find 1c processes
 :findProcess
@@ -133,82 +180,95 @@ if errorlevel 1 (
 )
 :: 1c processes found - ending
 :endProcess
-echo Ending 1C processes..
-tskill *1cv8* /a /v
+echo Завершение процессов 1С..
+taskkill /fi "IMAGENAME eq %processName%*" 2>&1 >NUL
 if errorlevel 1 (
-  echo Failed to end %processName% process. Try manually and continue..
+  echo Не удалось завершить процессы %processName%. Попробуйте самостоятельно..
   pause
   goto :findProcess
 ) else (
-  echo %processName% processes have been ended continue...
+  echo %processName% процессы завершены...
   goto :doBackup
 )
 :: no 1c processes found
 :noProcess
-echo No 1C processes found. Continue..
+echo Процессов 1С не обнаружено..
 :: backup base
 :doBackup
-echo Creating %BASE_NAME% backup..
-echo Copying 1CD file..
+echo Создание резервной копии %BASE_NAME%..
+echo Копирование файла 1CD..
 xcopy /Y %BASES_DIR%\%BASE_NAME%\1Cv8.1CD %BACKUP_DIR%\%BASE_NAME%\ 2>&1 >NUL
 if errorlevel 1 (
-  echo Copy failed.. 2>&1
+  echo Копирование не удалось.. 2>&1
 ) else (
-  echo copy finished
+  echo Копирование завершено..
   if exist %BACKUP_DIR%\%BASE_NAME%\1Cv8.1CD (
-    echo Copy check: target file exists.. Ok
+    echo Проверка: копия создана..
   ) else (
-    echo Copy check: target file doesn't exist.. Failed
+    echo Проверка: копия на создана..
   )
 )
-set DUMP_FILE=%BACKUP_DIR%\%BASE_NAME%\%BASE_NAME%_%date:~6,4%-%date:~3,2%-%date:~0,2%_%time:~0,2%%time:~3,2%.dt
-echo Creating DB dump file: %DUMP_FILE%
+set timeNoSpace=%TIME: =0%
+set DUMP_FILE=%BACKUP_DIR%\%BASE_NAME%\%BASE_NAME%_%date:~6,4%-%date:~3,2%-%date:~0,2%_%timeNoSpace:~0,2%%timeNoSpace:~3,2%.dt
+echo Выгрузка информационной базы: %DUMP_FILE%
 if exist %DUMP_FILE% goto noBackup
 start "Backup Information Base" /b /wait %START_FILE% DESIGNER /F "%BASES_DIR%\%BASE_NAME%" /WA- /UC%UNLOCK_CODE% /DumpIB%DUMP_FILE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate 2>&1 >NUL
 if errorlevel 0 (
-  echo DB dump creation succeeded..
+  echo Выгрузка информационной базы завршена успешно..
 ) else (
-  echo DB dump creation failed..
+  echo Выгрузка информационной базы не удалась..
   rem goto unlockUsers
 )
+if %operation% EQU 1 (
+  goto noupdate
+) else (
+  goto update
+)
 :noBackup
-echo DB dump file file already exists..
+echo Выгрузка информационной базы уже существует..
 if %operation% EQU 1 goto noupdate
 
 :update
-echo update %BASE_TYPE% %BASE_NAME%
+echo Обновление базы %BASE_TYPE% %BASE_NAME%
 for /f "usebackq" %%i in (`dir /b /ad /on %updates_dir%\%BASE_TYPE%`) do (
   if "%CURRENT_VERSION%" gtr "%%i" (
-    echo Skip %%i update..
+    echo Пропуск версии %%i..
   ) else (
 ::================================================================
     :: do updates
-    echo Updating %BASE_NAME% to %%i version
-    set CF_DIR=%updates_dir%\%BASE_TYPE%\%%i
-    set CF_FILE=%CF_DIR%\%%i\1cv8.cfu
+    echo Обновление %BASE_NAME% до версии %%i
+    set CF_FILE=%updates_dir%\%BASE_TYPE%\%%i\1cv8.cfu
+    echo Файл обновления: !CF_FILE!
+    if not exist !CF_FILE! (
+      echo Файл обновления не найден - отмена обновления..
+      goto unlockUsers
+    )
+    rem Каталог не обнаружен 'D:\3_0_136_32\1cv8.cfu'. 3(0x00000003): Системе не удается найти указанный путь. 
     start "Update to %%i version" /b /wait %START_FILE% DESIGNER /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /UC%UNLOCK_CODE% /UpdateCfg !CF_FILE! /UpdateDBCfg -Dynamic- / -WarningsAsErrors /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate
 ::================================================================
     if errorlevel 0 (
-      echo Update to version %%i succeeded..
+      echo Обновление до версии %%i завершно успешно..
       set CURRENT_VERSION=%%i
     ) else (
-      echo Update failed..
+      echo Обновление не удалось..
       goto unlockUsers
     )
   )
 )
+
+
+:noupdate
 :: unlock users
 :unlockUsers
-echo Unlocking users..
+echo Снятие блокировки пользователей..
 start "Unlocking users" /b /wait %START_FILE% ENTERPRISE /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /C "РазрешитьРаботуПользователей" /UC%UNLOCK_CODE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate 2>&1 >NUL
 if errorlevel 0 (
-  echo Работа пользователей разрешена
+  echo Блокировка пользователей снята..
 ) else (
-  echo Не удалось разрешить работу пользователей
+  echo Не удалось снять блокировку пользователей..
 )
 if %select% NEQ 0 goto end
 
-:noupdate
 :next
 if %select% EQU 0 (
   set /a step=%step%+1
@@ -217,4 +277,4 @@ if %select% EQU 0 (
 
 :end
 echo.
-echo finished
+echo Конец
