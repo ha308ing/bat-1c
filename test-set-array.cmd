@@ -164,7 +164,7 @@ goto copy
 echo Резервное копирование %BASE_NAME%..
 :: lock users
 echo Блокировка пользователей..
-start "Блокировка работы пользователей" /b /wait %START_FILE% ENTERPRISE /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /CЗавершитьРаботуПользователей /UC%UNLOCK_CODE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate 2>&1 >NUL
+start "Блокировка работы пользователей" /b /wait %START_FILE% ENTERPRISE /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /CЗавершитьРаботуПользователей /UC%UNLOCK_CODE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate
 if errorlevel 0 (
   echo Работа пользователей завершена..
 ) else (
@@ -181,15 +181,16 @@ if errorlevel 1 (
 :: 1c processes found - ending
 :endProcess
 echo Завершение процессов 1С..
-taskkill /fi "IMAGENAME eq %processName%*" 2>&1 >NUL
+taskkill /f /fi "IMAGENAME eq %processName%*" 2>&1 >NUL
 if errorlevel 1 (
   echo Не удалось завершить процессы %processName%. Попробуйте самостоятельно..
   pause
-  goto :findProcess
 ) else (
   echo %processName% процессы завершены...
   goto :doBackup
 )
+goto :findProcess
+
 :: no 1c processes found
 :noProcess
 echo Процессов 1С не обнаружено..
@@ -212,7 +213,7 @@ set timeNoSpace=%TIME: =0%
 set DUMP_FILE=%BACKUP_DIR%\%BASE_NAME%\%BASE_NAME%_%date:~6,4%-%date:~3,2%-%date:~0,2%_%timeNoSpace:~0,2%%timeNoSpace:~3,2%.dt
 echo Выгрузка информационной базы: %DUMP_FILE%
 if exist %DUMP_FILE% goto noBackup
-start "Backup Information Base" /b /wait %START_FILE% DESIGNER /F "%BASES_DIR%\%BASE_NAME%" /WA- /UC%UNLOCK_CODE% /DumpIB%DUMP_FILE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate 2>&1 >NUL
+start "Выгрузка информационной базы" /b /wait %START_FILE% DESIGNER /F "%BASES_DIR%\%BASE_NAME%" /WA- /UC%UNLOCK_CODE% /DumpIB%DUMP_FILE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate
 if errorlevel 0 (
   echo Выгрузка информационной базы завршена успешно..
 ) else (
@@ -231,11 +232,11 @@ if %operation% EQU 1 goto noupdate
 :update
 echo Обновление базы %BASE_TYPE% %BASE_NAME%
 for /f "usebackq" %%i in (`dir /b /ad /on %updates_dir%\%BASE_TYPE%`) do (
-  if "%CURRENT_VERSION%" gtr "%%i" (
+  if "%CURRENT_VERSION%" geq "%%i" (
     echo Пропуск версии %%i..
   ) else (
-::================================================================
-    :: do updates
+rem ================================================================
+    rem do updates
     echo Обновление %BASE_NAME% до версии %%i
     set CF_FILE=%updates_dir%\%BASE_TYPE%\%%i\1cv8.cfu
     echo Файл обновления: !CF_FILE!
@@ -244,8 +245,8 @@ for /f "usebackq" %%i in (`dir /b /ad /on %updates_dir%\%BASE_TYPE%`) do (
       goto unlockUsers
     )
     rem Каталог не обнаружен 'D:\3_0_136_32\1cv8.cfu'. 3(0x00000003): Системе не удается найти указанный путь. 
-    start "Update to %%i version" /b /wait %START_FILE% DESIGNER /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /UC%UNLOCK_CODE% /UpdateCfg !CF_FILE! /UpdateDBCfg -Dynamic- / -WarningsAsErrors /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate
-::================================================================
+    start "Обновление конфигурации" /b /wait %START_FILE% DESIGNER /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /UC%UNLOCK_CODE% /UpdateCfg !CF_FILE! /UpdateDBCfg -Dynamic- / -WarningsAsErrors /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate
+rem ================================================================
     if errorlevel 0 (
       echo Обновление до версии %%i завершно успешно..
       set CURRENT_VERSION=%%i
@@ -261,7 +262,7 @@ for /f "usebackq" %%i in (`dir /b /ad /on %updates_dir%\%BASE_TYPE%`) do (
 :: unlock users
 :unlockUsers
 echo Снятие блокировки пользователей..
-start "Unlocking users" /b /wait %START_FILE% ENTERPRISE /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /C "РазрешитьРаботуПользователей" /UC%UNLOCK_CODE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate 2>&1 >NUL
+start "Снятие блокировки пользователей" /b /wait %START_FILE% ENTERPRISE /DisableStartupDialogs /F "%BASES_DIR%\%BASE_NAME%" /WA- /C "РазрешитьРаботуПользователей" /UC%UNLOCK_CODE% /Out%LOGS_DIR%\%BASE_NAME%.log -NoTruncate
 if errorlevel 0 (
   echo Блокировка пользователей снята..
 ) else (
