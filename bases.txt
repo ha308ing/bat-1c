@@ -1,0 +1,8 @@
+id  basePath                updatePath                                                              currentVersion      title
+===
+1|C:\1С\TimberDis|C:\Users\Elena\Ap pData\Roaming\1C\1cv8\tmplts\1c\AccountingBase|0|Тимбэ Дистрибуция
+===
+2|C:\1С\Legion_corp|C:\Users\Elena\App Data\Roaming\1C\1cv8\tmplts\1c\AccountingCorp|0|Легион
+===
+3|C:\1С\ProfiSN_hrm|C:\Users\Elena\AppData\Roaming\1C\1cv8\tmplts\1c\hrm|0|ЗУП Профи-СН
+===
