@@ -1,4 +1,6 @@
-chcp 65001 & setlocal ENABLEDELAYEDEXPANSION
+@echo off & chcp 65001 >NUL & setlocal ENABLEDELAYEDEXPANSION
+@REM chcp 65001 & setlocal ENABLEDELAYEDEXPANSION
+
 :: find 1c processes
 :findProcess
 tasklist /fi "IMAGENAME eq 1cv8*" /nh | findstr /i /c:1cv8 >NUL
